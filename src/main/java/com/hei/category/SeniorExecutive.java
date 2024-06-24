@@ -1,15 +1,17 @@
 package com.hei.category;
 
 
+import com.hei.calendrier.Calendar;
+
+import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.List;
 
 public final class SeniorExecutive extends Category {
-    private final List<String> prime;
+    private List<String> prime;
 
-
-    public SeniorExecutive(String name, int workingHourPerDay, Double salaryPerWeek, Double compensation) {
-        super(name, workingHourPerDay, salaryPerWeek, compensation);
-        this.prime=new ArrayList<>();
+    public SeniorExecutive(String name, int workingHourPerWeek, int salaryPerWeek, int compensation, List<DayOfWeek> workingDays, Calendar calendar) {
+        super(name, workingHourPerWeek, salaryPerWeek, compensation, workingDays, calendar);
+        this.prime = new ArrayList<>();
     }
 }
