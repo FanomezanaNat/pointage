@@ -16,54 +16,153 @@ import static com.hei.category.Type.*;
 import static org.junit.Assert.assertEquals;
 
 public class EmployeTest {
+
     @Test
-    public void test() {
-        int year = 2024;
-        int month = 6;
-        List<LocalDate> dayOff = List.of(LocalDate.of(2024, 6, 17), LocalDate.of(2024, 6, 25), LocalDate.of(2024, 6, 26));
+    public void normalSalaryRakoto() {
+        var year = 2024;
 
-        List<DayOfWeek> workingDays = List.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY
+        List<DayOfWeek> workingDaysInWeek = List.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
 
-        );
+        Calendar calendar = new Calendar(year);
 
-        Calendar calendrier = new Calendar(month, year, dayOff);
-        Category category = new Guard("x", 56, 110_000,0, workingDays,calendrier);
-        Instant dateNaissance = Instant.parse("1980-01-01T00:00:00Z");
-        Instant dateDembauche = Instant.parse("2015-05-20T00:00:00Z");
-        Instant finContrat = Instant.parse("2023-12-31T00:00:00Z");
-        Employe Rakoto = new Employe("Rakoto", "x", dateNaissance, dateDembauche, finContrat, category);
-        Employe Rabe = new Employe("Rabe", "x", dateNaissance, dateDembauche, finContrat, category);
+        Category category = new Guard("Security Guard", 70, 100_000, 0, workingDaysInWeek, calendar);
+        Instant birthdayDate = Instant.parse("1980-01-01T00:00:00Z");
+        Instant hiringDate = Instant.parse("2020-05-20T00:00:00Z");
+        Instant endOfContract = Instant.parse("2028-12-31T00:00:00Z");
 
+        Employe Rakoto = new Employe("Rakoto", "Fra", birthdayDate, hiringDate, endOfContract, category);
 
+        var mai26 = LocalDate.of(2024, 5, 26);
+        var juillet06 = LocalDate.of(2024, 7, 6);
+        var workingDates = category.nonStopWorkingDay(mai26, juillet06);
 
-        assertEquals(216,Rakoto.getCategory().calculateMonthlyHours());
-        assertEquals(216,Rabe.getCategory().calculateMonthlyHours());
+        calendar.addWorkingDays(workingDates);
 
+        assertEquals(42, calendar.getWorkingDays().size());
+        assertEquals(10, Rakoto.getCategory().getWorkingHourPerDay());
 
-        var juin25 = LocalDate.of(2024, 6, 25);
-        var juin26 = LocalDate.of(2024, 6, 26);
-        var jour = new WorkingHour(8, Arrays.asList(Jour, JourFerie));
-        var nuit = new WorkingHour(8, Arrays.asList(Nuit, JourFerie));
+        var expectedSalary = 600_000;
 
-
-        Rakoto.addWorkingOff(juin25, Arrays.asList(jour, nuit));
-        Rakoto.addWorkingOff(juin26, Arrays.asList(jour, nuit));
-
-        var salaryBasic = 2_970_000;
-        var netSalaryBasic=2_376_000;
-        var grossSalaryWithMajo=3_916_000;
-        var netSalaryWithMajo=3_132_800;
-
-
-        assertEquals(salaryBasic,Rakoto.getCategory().getGrossSalary());
-        assertEquals(netSalaryBasic,Rakoto.getCategory().getNetSalary());
-        assertEquals(grossSalaryWithMajo,Rakoto.grossSalaryDue());
-        assertEquals(netSalaryWithMajo,Rakoto.netSalaryDue());
-
-
+        assertEquals(expectedSalary, Math.round(Rakoto.normalGrossSalary(mai26, juillet06)));
 
 
     }
 
+    @Test
+    public void normalSalaryRabe() {
+        var year = 2024;
+        List<DayOfWeek> workingDaysInWeek = List.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
+
+        Calendar calendar = new Calendar(year);
+
+        Category category = new Guard("Security Guard", 98, 130_000, 0, workingDaysInWeek, calendar);
+        Instant birthdayDate = Instant.parse("1980-01-01T00:00:00Z");
+        Instant hiringDate = Instant.parse("2020-05-20T00:00:00Z");
+        Instant endOfContract = Instant.parse("2028-12-31T00:00:00Z");
+
+        Employe Rabe = new Employe("Rabe", "Jean", birthdayDate, hiringDate, endOfContract, category);
+
+        var mai26 = LocalDate.of(2024, 5, 26);
+        var juillet06 = LocalDate.of(2024, 7, 6);
+        var nuit = new WorkingHour(14, List.of(Nuit));
+        var workingDates = category.nonStopWorkingDay(mai26, juillet06);
+        for (LocalDate date : workingDates) {
+            Rabe.addWorkingOff(date, List.of(nuit));
+        }
+        var expectedSalary = 780_000;
+
+        assertEquals(expectedSalary, Math.round(Rabe.normalGrossSalary(mai26, juillet06)));
+
+    }
+
+    @Test
+    public void salaryRakotoWithMajorationNightOnly() {
+        var year = 2024;
+
+        List<DayOfWeek> workingDaysInWeek = List.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
+
+        List<LocalDate> dayOff = List.of(LocalDate.of(2024, 6, 17)
+                , LocalDate.of(2024, 6, 25),
+                LocalDate.of(2024, 6, 26));
+
+        Calendar calendar = new Calendar(year);
+
+        calendar.addPublicHoliday(dayOff);
+
+        Category category = new Guard("Security Guard", 70, 100_000, 0, workingDaysInWeek, calendar);
+        Instant birthdayDate = Instant.parse("1980-01-01T00:00:00Z");
+        Instant hiringDate = Instant.parse("2020-05-20T00:00:00Z");
+        Instant endOfContract = Instant.parse("2028-12-31T00:00:00Z");
+
+        Employe Rakoto = new Employe("Rakoto", "Fra", birthdayDate, hiringDate, endOfContract, category);
+
+        var mai26 = LocalDate.of(2024, 5, 26);
+        var juillet06 = LocalDate.of(2024, 7, 6);
+
+        var workingDates = category.nonStopWorkingDay(mai26, juillet06);
+
+        calendar.addWorkingDays(workingDates);
+
+        var juin17 = LocalDate.of(2024, 6, 17);
+        var juin25 = LocalDate.of(2024, 6, 25);
+        var juin26 = LocalDate.of(2024, 6, 26);
+        var nuit = new WorkingHour(14, List.of(Nuit));
+
+        Rakoto.addWorkingOff(juin17, List.of(nuit));
+        Rakoto.addWorkingOff(juin25, List.of(nuit));
+        Rakoto.addWorkingOff(juin26, List.of(nuit));
+
+        var salaryExpected = 612_857;
+
+        assertEquals(salaryExpected, Math.round(Rakoto.grossSalaryDue(mai26, juillet06)));
+
+    }
+
+    @Test
+    public void salaryRakotoWithMajoration() {
+        var year = 2024;
+
+        List<DayOfWeek> workingDaysInWeek = List.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
+
+        List<LocalDate> dayOff = List.of(LocalDate.of(2024, 6, 17)
+                , LocalDate.of(2024, 6, 25),
+                LocalDate.of(2024, 6, 26));
+
+        Calendar calendar = new Calendar(year);
+
+        calendar.addPublicHoliday(dayOff);
+
+        Category category = new Guard("Security Guard", 70, 100_000, 0, workingDaysInWeek, calendar);
+        Instant birthdayDate = Instant.parse("1980-01-01T00:00:00Z");
+        Instant hiringDate = Instant.parse("2020-05-20T00:00:00Z");
+        Instant endOfContract = Instant.parse("2028-12-31T00:00:00Z");
+
+        Employe Rakoto = new Employe("Rakoto", "Fra", birthdayDate, hiringDate, endOfContract, category);
+
+        var mai26 = LocalDate.of(2024, 5, 26);
+        var juillet06 = LocalDate.of(2024, 7, 6);
+
+        var workingDates = category.nonStopWorkingDay(mai26, juillet06);
+
+        calendar.addWorkingDays(workingDates);
+
+        var juin17 = LocalDate.of(2024, 6, 17);
+        var juin25 = LocalDate.of(2024, 6, 25);
+        var juin26 = LocalDate.of(2024, 6, 26);
+
+        var jour = new WorkingHour(10, Arrays.asList(Jour, JourFerie));
+        var nuit = new WorkingHour(14, Arrays.asList(Nuit, JourFerie));
+
+        Rakoto.addWorkingOff(juin17, Arrays.asList(jour, nuit));
+        Rakoto.addWorkingOff(juin25, Arrays.asList(jour, nuit));
+        Rakoto.addWorkingOff(juin26, Arrays.asList(jour, nuit));
+
+        var salaryExpected = 807_857;
+
+        assertEquals(salaryExpected,Math.round(Rakoto.grossSalaryDue(mai26,juillet06)));
+    }
+
 
 }
+
+

@@ -23,7 +23,7 @@ public class Employe {
     private Category category;
     private List<LocalDate> attendanceDay;
     private Map<LocalDate, Integer> overtimeHours;
-    private HashMap<LocalDate, List<WorkingHour>> workingDayOff;
+    private Map<LocalDate, List<WorkingHour>> workingDayOff;
 
 
     public Employe(String lastName, String firstName, Instant dateOfBirth, Instant dateOfHire, Instant endOfContract, Category category) {
@@ -36,6 +36,14 @@ public class Employe {
         this.attendanceDay = new ArrayList<>();
         this.overtimeHours = new HashMap<>();
         this.workingDayOff = new HashMap<>();
+    }
+
+    public double normalGrossSalary(LocalDate begin, LocalDate ending) {
+        return (this.getCategory().getHourlyRate() * this.getCategory().nonStopWorkingDay(begin, ending).size());
+    }
+
+    public double normalNetSalary(LocalDate begin, LocalDate ending) {
+        return (normalGrossSalary(begin, ending) - (normalGrossSalary(begin, ending) * 0.2));
     }
 
 
@@ -71,39 +79,46 @@ public class Employe {
         this.overtimeHours.put(date, value);
     }
 
-    public int grossSalaryDue() {
-        int grossSalaryPerMonth = this.getCategory().getGrossSalary();
-        int netSalaryPerMonth = this.getCategory().getNetSalary();
-        int hourlyRate = this.getCategory().getHourlyRate();
+    public double grossSalaryDue(LocalDate begin, LocalDate ending) {
+        double hourlyRate = this.getCategory().getHourlyRate();
+        double workingDaysOff = this.workingDayOff.size();
+        double workingDays = this.getCategory().getCalendar().getWorkingDays().size();
+        double hourlyRateNight = hourlyRate * 1.3;
+        double hourlyHolidayRate = hourlyRate * 1.5;
+        double nightRate = 1.3;
+        double holidayRate = 1.5;
 
-        int salaryovertimeHours = 0;
-        int salaryNightHours = 0;
-        int salaryHolidaysHours = 0;
-        int salarySundaysHours = 0;
-        int totalAmount = 0;
+        double totalAmount = 0;
+        double total = 0;
 
         for (Map.Entry<LocalDate, List<WorkingHour>> entry : workingDayOff.entrySet()) {
-            LocalDate date = entry.getKey();
             List<WorkingHour> workingHours = entry.getValue();
 
             for (WorkingHour hour : workingHours) {
                 for (Type type : hour.getType()) {
                     switch (type) {
-                        case Nuit -> salaryNightHours += (int) (hourlyRate * hour.getHour() * 1.3);
-                        case JourFerie -> salaryHolidaysHours += (int) (hour.getHour() * hourlyRate * 1.5);
-                        case Dimanche -> salarySundaysHours += (int) (hour.getHour() * hourlyRate * 1.4);
+                        case Nuit -> totalAmount = ((hourlyRate) * (workingDays + (workingDaysOff * nightRate)));
+                        case JourFerie -> {
+                            if (totalAmount > 0) {
+                                totalAmount = (hourlyRateNight) * (workingDays + (workingDaysOff * holidayRate));
+                            } else if (totalAmount == 0) {
+                                totalAmount = (hourlyRate) * (workingDays + (workingDaysOff * holidayRate));
+
+                            }
+
+                        }
+
 
                     }
                 }
 
             }
         }
-        totalAmount += grossSalaryPerMonth + salaryNightHours + salaryHolidaysHours;
         return totalAmount;
     }
 
-    public int netSalaryDue() {
-        return (int) (grossSalaryDue() - grossSalaryDue() * 0.2);
+    public double netSalaryDue(LocalDate begin, LocalDate ending) {
+        return (grossSalaryDue(begin, ending) - grossSalaryDue(begin, ending) * 0.2);
     }
 
 
